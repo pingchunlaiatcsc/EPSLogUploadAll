@@ -21,6 +21,7 @@ namespace EPSLogUploadAll
         int lastTimeReadLineIndex = 0;
         int allLinesCount = 0;
         string carId = "";
+        string creatorId = "";
         List<string> coilList = new List<string>();
         List<remote_visual_inspection> rviList = new List<remote_visual_inspection>();
         DateTime CrossDay;
@@ -32,6 +33,7 @@ namespace EPSLogUploadAll
         private void button1_Click(object sender, EventArgs e)
         {
             ImportAllLogToWebsite();
+            MessageBox.Show("上傳完成");
         }
         void ImportAllLogToWebsite()
         {
@@ -127,6 +129,7 @@ namespace EPSLogUploadAll
                         //keep_Queue.Clear();
                         remote_visual_inspection rvi = new remote_visual_inspection();
                         rvi.carId = carId;
+                        rvi.creator = creatorId;
                         foreach (var coil in coilList)
                         {
                             if (rvi.coil1 is null)
@@ -159,17 +162,23 @@ namespace EPSLogUploadAll
                     }
                     else if (item.IndexOf("無內銷車籍記錄") != -1)
                     {
-                        var tt = item.IndexOf("已退車");
                         carId = "";
-                        coilList = new List<string>();
                     }
                     else if (item.IndexOf("無外銷車籍記錄") != -1)
                     {
-                        var tt = item.IndexOf("已退車");
                         carId = "";
-                        coilList = new List<string>();
                     }
+                    else if (item.IndexOf("檢核員") != -1)
+                    {
+                        var creatorId_Num_start_pos = item.IndexOf("檢核員");
+                        creatorId = item.Substring(creatorId_Num_start_pos + 3 , 6);
 
+                    }
+                    else if (item.IndexOf("登出") != -1)
+                    {
+                        var tt = item.IndexOf("登出");
+                        creatorId = "";
+                    }
                 }
                 thisTimeReadLineIndex++;
             }
@@ -229,7 +238,8 @@ namespace EPSLogUploadAll
                         $"&coil5={rvi.coil5}" +
                         $"&coil6={rvi.coil6}" +
                         $"&coil7={rvi.coil7}" +
-                        $"&coil8={rvi.coil8}";
+                        $"&coil8={rvi.coil8}" +
+                        $"&creator={rvi.creator}";
                     HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url + $"/create?{PostTail}");
                     //request.CookieContainer = cookieContainer;
                     //request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
@@ -342,8 +352,7 @@ namespace EPSLogUploadAll
             foreach (var item in PathEntries)
             {
                 yy += item.ToString() +"\n";
-            }
-            textBox1.Text= yy;
+            }            
         }
     }
 }
