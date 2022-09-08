@@ -168,7 +168,7 @@ namespace EPSLogUploadAll
                     {
                         carId = "";
                     }
-                    else if (item.IndexOf("檢核員") != -1)
+                    else if (item.IndexOf("登入") != -1)
                     {
                         var creatorId_Num_start_pos = item.IndexOf("檢核員");
                         creatorId = item.Substring(creatorId_Num_start_pos + 3 , 6);
