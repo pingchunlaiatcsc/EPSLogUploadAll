@@ -59,7 +59,8 @@ namespace EPSLogUploadAll.Models
 
         [DisplayName("IP")]
         public string ip { get; set; }
-
+        [DisplayName("位置")]
+        public string location { get; set; }
         [DisplayName("查詢月份")]
         public string queryMonth { get; set; }
     }

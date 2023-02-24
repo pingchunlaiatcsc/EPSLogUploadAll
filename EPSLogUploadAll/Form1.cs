@@ -25,6 +25,7 @@ namespace EPSLogUploadAll
         List<string> coilList = new List<string>();
         List<remote_visual_inspection> rviList = new List<remote_visual_inspection>();
         DateTime CrossDay;
+        string Location;
         public Form1()
         {
             InitializeComponent();
@@ -40,7 +41,8 @@ namespace EPSLogUploadAll
             string myLogFolder;
             using (ReadINI oTINI = new ReadINI(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.ini")))
             {
-                myLogFolder = oTINI.getKeyValue("WorklogPath", "Value"); //Section name=Worklog；Key name=Value              
+                myLogFolder = oTINI.getKeyValue("WorklogPath", "Value"); //Section name=Worklog；Key name=Value
+                Location = oTINI.getKeyValue("Location", "Value");
             }
             string[] PathEntries = GetAllFileInDirectory(myLogFolder);
 
@@ -149,6 +151,7 @@ namespace EPSLogUploadAll
                             else if (rvi.coil8 is null)
                                 rvi.coil8 = coil;
                         }
+                        rvi.location = Location;
                         rvi.tdate = DateTime.Parse(item.Substring(0, commaPos1));
                         rviList.Add(rvi);
                         carId = "";
@@ -239,6 +242,7 @@ namespace EPSLogUploadAll
                         $"&coil6={rvi.coil6}" +
                         $"&coil7={rvi.coil7}" +
                         $"&coil8={rvi.coil8}" +
+                        $"&location={rvi.location}" +
                         $"&creator={rvi.creator}";
                     HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url + $"/create?{PostTail}");
                     //request.CookieContainer = cookieContainer;
