@@ -187,14 +187,33 @@ namespace EPSLogUploadAll
             }
             //將本次讀取到的行數紀錄起來，下次讀取時可知道上次讀取到哪一行，避免重複讀取
             lastTimeReadLineIndex = thisTimeReadLineIndex;
-            upload(rviList);
+            uploadList(rviList);
             rviList = new List<remote_visual_inspection>();
             allLinesCount = 0;
         }
 
-        private void upload(List<remote_visual_inspection> rviList)
+        private void uploadList(List<remote_visual_inspection> rviList)
         {
             if (rviList.Count == 0) return;
+            try
+            {
+                string url = "http://c34web.csc.com.tw/C349WebMVC/api/RVI_API";
+
+                foreach (var rvi in rviList)
+                {
+                    upload(rvi);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        static Boolean upload(remote_visual_inspection rvi)
+        {
             try
             {
                 string url = "http://c34web.csc.com.tw/C349WebMVC/api/RVI_API";
@@ -202,90 +221,77 @@ namespace EPSLogUploadAll
                 //string url = "http://localhost:1954/RVI_CreateWithEPSLOG/Create";
                 //string url = "http://localhost:1954/api/RVI_API";
 
-                //HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url+$"?tdate=2022-07-08%2017:40:15&carId=KLC6767F");
-                ////set the cookie container object
-                //request.CookieContainer = cookieContainer;
-                //request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
-                //request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
-                ////set method POST and content type application/x-www-form-urlencoded
-                //request.Method = "GET";
-                //request.ContentType = "application/json";
+                Boolean log_exist = false;  //此flag用來檢查server端是否存在相同log，若有則取消此次上傳
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url + $"?tdate={rvi.tdate.Value.ToString("yyyy-MM-dd HH:mm:ss")}&carId={rvi.carId}");
+                //set the cookie container object
+                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
+                request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+                //set method POST and content type application/x-www-form-urlencoded
+                request.Method = "GET";
+                request.ContentType = "application/json";
 
-
-                ////看到.GetResponse()才代表真正把 request 送到 伺服器
-                //using (WebResponse response = request.GetResponse())
-                //{
-                //    using (StreamReader sr = new StreamReader(response.GetResponseStream(), System.Text.Encoding.Default))
-                //    {
-                //        var z = sr.ReadToEnd();
-                //        var document = new HtmlAgilityPack.HtmlDocument();
-                //        document.LoadHtml(z);
-                //        //Response.Write(z);
-
-
-                //        //注意:直接從chropath插件複製出來的xPath會有/tbody/、/div/這一層，有時候要刪掉、調整才能正常讀取(div亂序)
-                //        //
-
-                //        //RequestVerificationToken = document.DocumentNode.SelectSingleNode("//input[@name='__RequestVerificationToken']").GetAttributeValue("value", "default");
-                //    }
-                //}
-
-                foreach (var rvi in rviList)
+                //看到.GetResponse()才代表真正把 request 送到 伺服器
+                using (WebResponse response = request.GetResponse())
                 {
+                    using (StreamReader sr = new StreamReader(response.GetResponseStream(), System.Text.Encoding.Default))
+                    {
+                        var z = sr.ReadToEnd().Split(',')[0].Split(':')[1];
+                        if (z.IndexOf("null", 0) >= 0)
+                        {
+                            log_exist = true;
+                        }
+                    }
+                }
+                if (!log_exist) return false;
 
-                    string PostTail = $"carId={rvi.carId}&tdate={HttpUtility.UrlEncode(rvi.tdate.Value.ToString("yyyy-MM-dd HH:mm:ss"), Encoding.UTF8)}" +
-                        $"&coil1={rvi.coil1}" +
-                        $"&coil2={rvi.coil2}" +
-                        $"&coil3={rvi.coil3}" +
-                        $"&coil4={rvi.coil4}" +
-                        $"&coil5={rvi.coil5}" +
-                        $"&coil6={rvi.coil6}" +
-                        $"&coil7={rvi.coil7}" +
-                        $"&coil8={rvi.coil8}" +
-                        $"&location={rvi.location}" +
-                        $"&creator={rvi.creator}";
-                    HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url + $"/create?{PostTail}");
-                    //request.CookieContainer = cookieContainer;
-                    //request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
-                    //request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
-                    //set method POST and content type application/x-www-form-urlencoded
-                    request.Method = "GET";
-                    request.ContentType = "application/json";
-                    //string EIPLoginPostData = "";
-                    //string PostHead = "__RequestVerificationToken=" + HttpUtility.UrlEncode(RequestVerificationToken, Encoding.UTF8);
+                string Param = $"carId={rvi.carId}&tdate={HttpUtility.UrlEncode(rvi.tdate.Value.ToString("yyyy-MM-dd HH:mm:ss"), Encoding.UTF8)}" +
+                    $"&coil1={rvi.coil1}" +
+                    $"&coil2={rvi.coil2}" +
+                    $"&coil3={rvi.coil3}" +
+                    $"&coil4={rvi.coil4}" +
+                    $"&coil5={rvi.coil5}" +
+                    $"&coil6={rvi.coil6}" +
+                    $"&coil7={rvi.coil7}" +
+                    $"&coil8={rvi.coil8}" +
+                    $"&coil9={rvi.coil9}" +
+                    $"&coil10={rvi.coil10}" +
+                    $"&coil11={rvi.coil11}" +
+                    $"&coil12={rvi.coil12}" +
+                    $"&coil13={rvi.coil13}" +
+                    $"&coil14={rvi.coil14}" +
+                    $"&coil15={rvi.coil15}" +
+                    $"&coil16={rvi.coil16}" +
+                    $"&location={rvi.location}" +
+                    $"&creator={rvi.creator}";
+                request = (HttpWebRequest)HttpWebRequest.Create(url + $"/create?{Param}");
 
+                request.Method = "GET";
+                request.ContentType = "application/json";
+                string EIPLoginPostData = "";
+                EIPLoginPostData = Param;
 
+                Boolean UpLoadAgain = false;
 
-                    //string userTail = string.Format("&uxCompany=&uxUserId={0}&uxPassword={1}&uxSubmit=%E7%99%BB%E5%85%A5", "214585", "791005"); //測試用userTail
-                    //EIPLoginPostData = PostTail;
-
-                    //string[] mySplit = EIPLoginPostData.Split('%');
-                    //for (int i = 1; i < mySplit.Length; i++)
-                    //{
-                    //    var g = mySplit[i].Substring(0, 2).ToUpper();
-                    //    var h = mySplit[i].Substring(2, mySplit[i].Length - g.Length);
-                    //    mySplit[i] = g + h;
-                    //}
-
-                    //EIPLoginPostData = string.Join("%", mySplit);
-
-
-
-
-                    //string postData = string.Format(EIPLoginPostData);
-                    //byte[] bytes = System.Text.Encoding.UTF8.GetBytes(postData);
-                    //request.ContentLength = bytes.Length;
-
-                    ////意義不明
-                    //using (Stream dataStream = request.GetRequestStream())
-                    //{
-                    //    dataStream.Write(bytes, 0, bytes.Length);
-                    //    dataStream.Close();
-                    //}
-
-                    Boolean UpLoadAgain = false;
-
-                    //看到.GetResponse()才代表真正把 request 送到 伺服器
+                //看到.GetResponse()才代表真正把 request 送到 伺服器
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                {
+                    using (StreamReader sr = new StreamReader(response.GetResponseStream()))
+                    {
+                        if (response.StatusCode != HttpStatusCode.OK)
+                        {
+                            UpLoadAgain = true;
+                        }
+                        var yy = sr.ReadToEnd();
+                        // sr 就是伺服器回覆的資料
+                        //Response.Write(sr.ReadToEnd()); //將 sr 寫入到 html中，呈現給客戶端看
+                    }
+                }
+                while (UpLoadAgain)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append($"{rvi.tdate}/{rvi.carId}/{rvi.coil1}/{rvi.coil2}/{rvi.coil3}/{rvi.coil4}/{rvi.coil5}/{rvi.coil6}/{rvi.coil7}/{rvi.coil8}/{rvi.coil9}/{rvi.coil10}/{rvi.coil11}/{rvi.coil12}/{rvi.coil13}/{rvi.coil14}/{rvi.coil15}/{rvi.coil16} UpLoad Fail.");
+                    sb.Clear();
+                    System.Threading.Thread.Sleep(1000);
                     using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
                     {
                         using (StreamReader sr = new StreamReader(response.GetResponseStream()))
@@ -294,36 +300,17 @@ namespace EPSLogUploadAll
                             {
                                 UpLoadAgain = true;
                             }
-                            var yy = sr.ReadToEnd();
-                            // sr 就是伺服器回覆的資料
-                            //Response.Write(sr.ReadToEnd()); //將 sr 寫入到 html中，呈現給客戶端看
-                        }
-                    }
-                    while (UpLoadAgain)
-                    {
-                        StringBuilder sb = new StringBuilder();
-                        sb.Append($"{rvi.tdate}/{rvi.carId}/{rvi.coil1}/{rvi.coil2}/{rvi.coil3}/{rvi.coil4}/{rvi.coil5}/{rvi.coil6}/{rvi.coil7}/{rvi.coil8} UpLoad Fail.");
-                        File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "upload_err_log.txt"), sb.ToString());
-                        sb.Clear();
-                        System.Threading.Thread.Sleep(1000);
-                        using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                        {
-                            using (StreamReader sr = new StreamReader(response.GetResponseStream()))
-                            {
-                                if (response.StatusCode != HttpStatusCode.OK)
-                                {
-                                    UpLoadAgain = true;
-                                }
-                            }
                         }
                     }
                 }
+
+                return true;
 
 
             }
             catch (Exception ex)
             {
-
+                return false;
             }
         }
 

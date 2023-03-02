@@ -48,6 +48,30 @@ namespace EPSLogUploadAll.Models
         [DisplayName("鋼捲8")]
         public string coil8 { get; set; }
 
+        [DisplayName("鋼捲9")]
+        public string coil9 { get; set; }
+
+        [DisplayName("鋼捲10")]
+        public string coil10 { get; set; }
+
+        [DisplayName("鋼捲11")]
+        public string coil11 { get; set; }
+
+        [DisplayName("鋼捲12")]
+        public string coil12 { get; set; }
+
+        [DisplayName("鋼捲13")]
+        public string coil13 { get; set; }
+
+        [DisplayName("鋼捲14")]
+        public string coil14 { get; set; }
+
+        [DisplayName("鋼捲15")]
+        public string coil15 { get; set; }
+
+        [DisplayName("鋼捲16")]
+        public string coil16 { get; set; }
+
         [DisplayName("載運車牌")]
         public string carId { get; set; }
 
@@ -59,9 +83,12 @@ namespace EPSLogUploadAll.Models
 
         [DisplayName("IP")]
         public string ip { get; set; }
+
         [DisplayName("位置")]
         public string location { get; set; }
+
         [DisplayName("查詢月份")]
         public string queryMonth { get; set; }
+
     }
 }
