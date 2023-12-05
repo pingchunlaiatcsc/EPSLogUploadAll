@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace EPSLogUploadAll
 {
@@ -26,6 +27,7 @@ namespace EPSLogUploadAll
         List<remote_visual_inspection> rviList = new List<remote_visual_inspection>();
         DateTime CrossDay;
         string Location;
+        public static string EPSVersion;
         public Form1()
         {
             InitializeComponent();
@@ -43,6 +45,7 @@ namespace EPSLogUploadAll
             {
                 myLogFolder = oTINI.getKeyValue("WorklogPath", "Value"); //Section name=Worklog；Key name=Value
                 Location = oTINI.getKeyValue("Location", "Value");
+                EPSVersion = oTINI.getKeyValue("Settings", "EPSVersion"); //Section name=Date；Key name=Value
             }
             string[] PathEntries = GetAllFileInDirectory(myLogFolder);
 
@@ -58,18 +61,35 @@ namespace EPSLogUploadAll
                     i--;
                 }
             }
-
-            for (int i = 0; i < PathEntriesList.Count; i++)
+            if (EPSVersion == "before2023")
             {
-                string[] dateStringParse = PathEntriesList[i].Substring(myLogFolder.Length + 1, 10).Split('-');
-                var ParsedDate = DateTime.Parse($"{dateStringParse[0]}/{dateStringParse[1]}/{dateStringParse[2]}");
-                if (ParsedDate < DateTime.Parse("2022/05/13"))
+                for (int i = 0; i < PathEntriesList.Count; i++)
                 {
-                    //移除遠端檢放上線前的log
-                    PathEntriesList.Remove(PathEntriesList[i]);
-                    i--;
+                    string[] dateStringParse = PathEntriesList[i].Substring(myLogFolder.Length + 1, 10).Split('-');
+                    var ParsedDate = DateTime.Parse($"{dateStringParse[0]}/{dateStringParse[1]}/{dateStringParse[2]}");
+                    if (ParsedDate < DateTime.Parse("2022/05/13"))
+                    {
+                        //移除遠端檢放上線前的log
+                        PathEntriesList.Remove(PathEntriesList[i]);
+                        i--;
+                    }
                 }
             }
+            else
+            {
+                for (int i = 0; i < PathEntriesList.Count; i++)
+                {
+                    var yy = PathEntriesList[i].Substring(myLogFolder.Length + 8, 4);
+                    var ParsedDate = DateTime.Parse($"{PathEntriesList[i].Substring(myLogFolder.Length+8, 4)}/{PathEntriesList[i].Substring(myLogFolder.Length+12, 2)}/{PathEntriesList[i].Substring(myLogFolder.Length+14, 2)}");
+                    if (ParsedDate < DateTime.Parse("2022/05/13"))
+                    {
+                        //移除遠端檢放上線前的log
+                        PathEntriesList.Remove(PathEntriesList[i]);
+                        i--;
+                    }
+                }
+            }
+
 
             for (int i = 0; i < PathEntriesList.Count; i++)
             {
@@ -105,30 +125,51 @@ namespace EPSLogUploadAll
                 {
                     if (item.IndexOf("車輛報到") != -1)
                     {
-                        var tt = item.IndexOf("車輛報到");
-                        int commaPos1 = item.IndexOf(",");
-                        int car_checkin_pos = commaPos1 + 7;
-                        int car_Num_start_pos = car_checkin_pos + 4;
+                        if (EPSVersion == "before2023")
+                        {
+                            var tt = item.IndexOf("車輛報到");
+                            int commaPos1 = item.IndexOf(",");
+                            int car_checkin_pos = commaPos1 + 7;
+                            int car_Num_start_pos = car_checkin_pos + 4;
 
-                        carId = item.Substring(car_Num_start_pos, 8);
+                            carId = item.Substring(car_Num_start_pos, 8);
+                        }
+                        else
+                        {
+                            int firstColonPos = item.IndexOf(":");
+                            int secondColonPos = item.IndexOf(":", firstColonPos + 1);
+                            int thirdColonPos = item.IndexOf(":", secondColonPos + 1);
+                            int fourthColonPos = item.IndexOf(":", thirdColonPos + 1);
+                            int fifthColonPos = item.IndexOf(":", fourthColonPos + 1);
+                            int car_Num_start_pos = fifthColonPos + 1;
+                            carId = item.Substring(car_Num_start_pos, 8).Trim();
+                        }
                     }
                     else if (item.IndexOf("掃瞄車上鋼品") != -1)
                     {
+                        //EPSVersion == "before2023"
                         var tt = item.IndexOf("掃瞄車上鋼品");
-
                         var commaPos1 = item.IndexOf(",");
                         var commaPos2 = item.IndexOf("顆", commaPos1 + 1);
                         var commaPos3 = item.IndexOf(",", commaPos1 + 1);
                         //line += item.Substring(commaPos1 + 1, commaPos2 - commaPos1 - 1) + "\n";
                         coilList.Add(item.Substring(commaPos2 + 1, commaPos3 - commaPos2 - 1));
                     }
+                    else if (item.IndexOf("掃描車上鋼品") != -1)
+                    {
+                        //EPSVersion == "after2023"
+                        //"瞄"跟"描"字不一樣!
+                        var tt = item;
+                        int firstColonPos = item.IndexOf(":");
+                        int secondColonPos = item.IndexOf(":", firstColonPos + 1);
+                        int thirdColonPos = item.IndexOf(":", secondColonPos + 1);
+                        var commaPos1 = item.IndexOf("顆", thirdColonPos + 1);
+                        var commaPos2 = item.IndexOf(",", thirdColonPos + 1);
+                        coilList.Add(item.Substring(commaPos1 + 1, commaPos2 - commaPos1 - 1));
+                    }
                     else if (item.IndexOf("放行") != -1)
                     {
                         var tt = item.IndexOf("放行");
-                        var commaPos1 = item.IndexOf(",");
-                        //line += item.Substring(commaPos1 + 1) + "\n" + "等待車輛報到中........\n";
-
-                        //keep_Queue.Clear();
                         remote_visual_inspection rvi = new remote_visual_inspection();
                         rvi.carId = carId;
                         rvi.creator = creatorId;
@@ -150,9 +191,36 @@ namespace EPSLogUploadAll
                                 rvi.coil7 = coil;
                             else if (rvi.coil8 is null)
                                 rvi.coil8 = coil;
+                            else if (rvi.coil9 is null)
+                                rvi.coil9 = coil;
+                            else if (rvi.coil10 is null)
+                                rvi.coil10 = coil;
+                            else if (rvi.coil11 is null)
+                                rvi.coil11 = coil;
+                            else if (rvi.coil12 is null)
+                                rvi.coil12 = coil;
+                            else if (rvi.coil13 is null)
+                                rvi.coil13 = coil;
+                            else if (rvi.coil14 is null)
+                                rvi.coil14 = coil;
+                            else if (rvi.coil15 is null)
+                                rvi.coil15 = coil;
+                        }
+                        if (EPSVersion == "before2023")
+                        {
+                            var commaPos1 = item.IndexOf(",");
+                            rvi.tdate = DateTime.Parse(item.Substring(0, commaPos1));
+                        }
+                        else
+                        {
+                            int firstColonPos = item.IndexOf(":");
+                            int secondColonPos = item.IndexOf(":", firstColonPos + 1);
+                            int thirdColonPos = item.IndexOf(":", secondColonPos + 1);
+                            string myLogFolder = Path.GetDirectoryName(myLogPath);
+                            var ParsedDate = DateTime.Parse($"{myLogPath.Substring(myLogFolder.Length + 8, 4)}-{myLogPath.Substring(myLogFolder.Length + 12, 2)}-{myLogPath.Substring(myLogFolder.Length + 14, 2)} {item.Substring(0, thirdColonPos)}");
+                            rvi.tdate = ParsedDate;
                         }
                         rvi.location = Location;
-                        rvi.tdate = DateTime.Parse(item.Substring(0, commaPos1));
                         rviList.Add(rvi);
                         carId = "";
                         coilList = new List<string>();
